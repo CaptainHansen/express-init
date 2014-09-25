@@ -1,38 +1,65 @@
 var express = require('express')
-  , exphbs = require('express-handlebars')
-  , path = require('path')
-  , favicon = require('serve-favicon')
-  , logger = require('morgan')
-  , cookieParser = require('cookie-parser')
-  , bodyParser = require('body-parser')
   , app = express()
   ;
 
-// views engine setup
-var hbs = exphbs.create({
-  extname: '.hbs',
-  defaultLayout: 'main',
-  helpers: {
-    getJS: function () { return "No."; },
-    getCSS: function () { return "no css..."; }
-  }
-});
-app.engine('.hbs', hbs.engine);
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', '.hbs');
+function compileLess () {
+  var fs = require('fs');
+  var less = require('less');
 
-// uncomment after placing your favicon in /public
-//app.use(favicon(__dirname + '/public/favicon.ico'));
-app.use(logger('dev'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+  fs.readFile(__dirname+'/less/style.less', function(err,styles) {
+      if(err) return console.error('Could not open file: %s',err);
+      less.render(styles.toString(), function(er,css) {
+          if(er) return console.error(er);
+          fs.writeFile(__dirname+'/public/stylesheets/style.css', css, function(e) {
+              if(e) return console.error(e);
+              console.log('Compiled CSS');
+          });
+      });
+  });
+}
+
+
+function setupTemplater () {
+  var exphbs = require('express-handlebars');
+  var path = require('path');
+
+  // views engine setup
+  var hbs = exphbs.create({
+    extname: '.hbs',
+    defaultLayout: 'main',
+    helpers: {
+      getJS: function () { return "No."; },
+      getCSS: function () { return "no css..."; }
+    }
+  });
+  app.engine('.hbs', hbs.engine);
+  app.set('views', path.join(__dirname, 'views'));
+  app.set('view engine', '.hbs');
+}
+
+function setupExpress () {
+  var path = require('path')
+    , cookieParser = require('cookie-parser')
+    , bodyParser = require('body-parser')
+//    , logger = require('morgan')
+//    , favicon = require('serve-favicon')
+    ;
+
+  // uncomment after placing your favicon in /public
+  //app.use(favicon(__dirname + '/public/favicon.ico'));
+  //app.use(logger('dev'));
+  app.use(bodyParser.json());
+  app.use(bodyParser.urlencoded({ extended: false }));
+  app.use(cookieParser());
+  app.use(express.static(path.join(__dirname, 'public')));
+}
 
 
 /***** my custom stuff *****/
 function loadFiles (dir) {
-  var files = require('fs').readdirSync(dir);
+  var fs = require('fs');
+
+  var files = fs.readdirSync(dir);
   for(i in files) {
     if(ms = files[i].match(/(.*)\.js$/)) {
       r = require(dir+ms[1]);
@@ -41,6 +68,9 @@ function loadFiles (dir) {
   }
 }
 
+compileLess();
+setupTemplater();
+setupExpress();
 loadFiles('./middleware/');
 loadFiles("./routes/");
 /****** end of that... *****/
