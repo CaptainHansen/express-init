@@ -4,5 +4,6 @@ var express = require('express')
 
 /* GET home page. */
 router.get('/', function(req, res) {
-  res.render('index', { title: 'Express' });
+  res.data.title = "Express TEST";
+  res.render('index', res.data);
 });

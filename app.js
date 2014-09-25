@@ -9,7 +9,14 @@ var express = require('express')
   ;
 
 // views engine setup
-var hbs = exphbs.create({extname: '.hbs', defaultLayout: 'main'});
+var hbs = exphbs.create({
+  extname: '.hbs',
+  defaultLayout: 'main',
+  helpers: {
+    getJS: function () { return "No."; },
+    getCSS: function () { return "no css..."; }
+  }
+});
 app.engine('.hbs', hbs.engine);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', '.hbs');
@@ -23,18 +30,20 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 
-// fucking load the routes
-var routesDir = "./routes/";
-var fs = require('fs')
-  , files = fs.readdirSync(routesDir)
-  ;
-for(i in files) {
-  if(ms = files[i].match(/(.*)\.js$/)) {
-    console.log('Loading '+ms[1]);
-    r = require(routesDir+ms[1]);
-    app.use('/',r);
+/***** my custom stuff *****/
+function loadFiles (dir) {
+  var files = require('fs').readdirSync(dir);
+  for(i in files) {
+    if(ms = files[i].match(/(.*)\.js$/)) {
+      r = require(dir+ms[1]);
+      app.use(r);
+    }
   }
 }
+
+loadFiles('./middleware/');
+loadFiles("./routes/");
+/****** end of that... *****/
 
 
 // catch 404 and forward to error handler
