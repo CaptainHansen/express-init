@@ -8,11 +8,10 @@ function compileLess () {
 
   fs.readFile(__dirname+'/less/style.less', function(err,styles) {
       if(err) return console.error('Could not open file: %s',err);
-      less.render(styles.toString(), function(er,css) {
+      less.render(styles.toString(), {compress: true, paths: [__dirname+'/less/']}, function(er,css) {
           if(er) return console.error(er);
           fs.writeFile(__dirname+'/public/stylesheets/style.css', css, function(e) {
-              if(e) return console.error(e);
-              console.log('Compiled CSS');
+            if(e) return console.error(e);
           });
       });
   });
@@ -73,6 +72,17 @@ setupTemplater();
 setupExpress();
 loadFiles('./middleware/');
 loadFiles("./routes/");
+
+// check for less changes and re-compile css (only if we're doing development :-) )
+if(app.get('env') === 'development') {
+  // watch for less changes 
+  var fs = require('fs');
+  fs.watch(__dirname+"/less", function (event, file) {
+    console.log(event+" "+file);
+    compileLess();
+  });
+}
+
 /****** end of that... *****/
 
 
