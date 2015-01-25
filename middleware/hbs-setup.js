@@ -18,7 +18,7 @@ module.exports = function (req, res, next) {
   res.data = { js: [], css: [], helpers: [] };
   res.data.helpers.getJS = getJS;
   res.data.helpers.getCSS = getCSS;
-  res.data.js.push("/javascripts/test.js");
-  res.data.css.push("/stylesheets/style.css");
+  res.data.js.push("/js/test.js");
+  res.data.css.push("/css/style.css");
   next();
 }
