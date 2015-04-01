@@ -72,7 +72,8 @@ function setupTemplater () {
     helpers: {
       getJS: function () { return "No."; },
       getCSS: function () { return "no css..."; }
-    }
+    },
+    layoutsDir: __dirname+"/views/layouts/"
   });
   app.engine('.hbs', hbs.engine);
   app.set('views', path.join(__dirname, 'views'));
@@ -94,7 +95,7 @@ function setupExpress () {
 
   var redisServer = process.env.REDIS_SERV || "localhost";
   app.use(session({
-    secret: "acousticStreameyweamy222",
+    secret: "secret",
     resave: true,
     saveUninitialized: false,
     store: new RedisStore({
@@ -127,9 +128,16 @@ function loadFiles (dir, attachFunc) {
   }
 }
 
-compileLess();
+compileLess('main');
+// compileLess("pages");
 setupTemplater();
 setupExpress();
+
+// plugins = {};
+// loadFiles(__dirname+"/plugins/",function (module, name) {
+//   plugins[name] = module;
+// });
+
 loadFiles('./middleware/');
 loadFiles("./routes/");
 
@@ -140,6 +148,21 @@ if(app.get('env') === 'development') {
     console.log(event+" "+file);
     compileLess();
   });
+}
+
+// check for less changes and re-compile css (only if we're doing development :-) )
+if(app.get('env') === 'development') {
+  // watch for less changes 
+  fs.watch(__dirname+"/less/includes", function (event, file) {
+    compileLess();
+    // compileLess('pages');
+  });
+  fs.watch(__dirname+"/less/main", function (event, file) {
+    compileLess();
+  });
+  // fs.watch(__dirname+"/less/pages", function (event, file) {
+  //   compileLess('pages');
+  // })
 }
 
 /****** end of that... *****/
@@ -159,10 +182,17 @@ app.use(function(req, res, next) {
 if (app.get('env') === 'development') {
   app.use(function(err, req, res, next) {
     res.status(err.status || 500);
-    res.render('error', {
-      message: err.message,
-      error: err
-    });
+    console.error(err.message);
+    console.error(err.stack);
+    if(req.xhr || req.headers.accept == "application/json") {
+      res.set("Content-Type", "text/plain");
+      res.send(err.message);
+    } else {
+      // res.data.layout = "basic";
+      res.data.message = err.message;
+      res.data.error = err;
+      res.render('error', res.data);
+    }
   });
 }
 
@@ -170,10 +200,15 @@ if (app.get('env') === 'development') {
 // no stacktraces leaked to user
 app.use(function(err, req, res, next) {
   res.status(err.status || 500);
-  res.render('error', {
-    message: err.message,
-    error: {}
-  });
+  if(req.xhr || req.headers.accept == "application/json") {
+    res.set("Content-Type", "text/plain");
+    res.send(err.message);
+  } else {
+    // res.data.layout = "basic";
+    res.data.message = err.message;
+    res.data.error = false;
+    res.render('error', res.data);
+  }
 });
 
 // launch!
